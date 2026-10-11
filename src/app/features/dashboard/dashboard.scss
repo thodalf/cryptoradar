@@ -62,3 +62,33 @@ table { width: 100%; background: transparent; }
 @media (max-width: 700px) {
   .hide-sm { display: none; }
 }
+
+.fg-row { display: flex; align-items: baseline; gap: 8px; }
+.fg-val {
+  // teinte de rouge (0) à vert (100)
+  color: color-mix(in srgb, var(--cr-up) calc(var(--fg) * 1%), var(--cr-down));
+}
+.fg-label { font: var(--mat-sys-title-small); color: var(--mat-sys-on-surface-variant); }
+.fg-bar {
+  position: relative;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cr-down), var(--cr-watch), var(--cr-up));
+  span {
+    position: absolute;
+    top: 50%;
+    width: 4px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--mat-sys-on-surface);
+    transform: translate(-50%, -50%);
+  }
+}
+.src {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  border: 1px solid var(--mat-sys-outline-variant);
+}

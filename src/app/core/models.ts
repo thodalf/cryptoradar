@@ -32,6 +32,7 @@ export interface MarketRow {
   low24h: number;
   rsi: number | null;
   spark: number[];      // clôtures des 48 dernières heures
+  source: 'binance' | 'coingecko';
 }
 
 export type SignalSide = 'buy' | 'sell' | 'watch';

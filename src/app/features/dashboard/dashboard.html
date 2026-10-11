@@ -31,6 +31,16 @@
       <div class="label">Actifs en hausse</div>
       <div class="value num">{{ k.breadth }} / {{ k.total }}</div>
     </div>
+    @if (fgNow(); as fg) {
+      <div class="kpi fg" [matTooltip]="'Indice Fear & Greed (alternative.me). Historiquement, la peur extrême a souvent coïncidé avec des points bas, et l\'avidité extrême avec des excès.'">
+        <div class="label">Sentiment du marché</div>
+        <div class="value fg-row">
+          <span class="num fg-val" [style.--fg]="fg.value">{{ fg.value }}</span>
+          <span class="fg-label">{{ fg.label }}</span>
+        </div>
+        <div class="fg-bar"><span [style.left.%]="fg.value"></span></div>
+      </div>
+    }
     <div class="kpi">
       <div class="label">Volume 24h cumulé</div>
       <div class="value num">{{ k.volume | eurCompact }}</div>
@@ -52,7 +62,11 @@
             <span class="avatar">{{ r.asset.slice(0, 1) }}</span>
             <div>
               <div class="ticker">{{ r.asset }}</div>
-              <div class="name muted">{{ names[r.asset] ?? '' }}</div>
+              <div class="name muted">{{ names[r.asset] ?? '' }}
+                @if (r.source === 'coingecko') {
+                  <span class="src" matTooltip="Hors Binance : cours CoinGecko, mis à jour chaque minute">CoinGecko</span>
+                }
+              </div>
             </div>
           </div>
         </td>

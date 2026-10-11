@@ -17,5 +17,20 @@ export const routes: Routes = [
     title: 'Portefeuille · Crypto Radar',
     loadComponent: () => import('./features/portfolio/portfolio').then((m) => m.Portfolio),
   },
+  {
+    path: 'alertes',
+    title: 'Alertes · Crypto Radar',
+    loadComponent: () => import('./features/alerts/alerts').then((m) => m.Alerts),
+  },
+  {
+    path: 'simulateur',
+    title: 'Simulateur · Crypto Radar',
+    loadComponent: () => import('./features/dca/dca').then((m) => m.Dca),
+  },
+  {
+    path: 'fiscalite',
+    title: 'Fiscalité · Crypto Radar',
+    loadComponent: () => import('./features/tax/tax').then((m) => m.Tax),
+  },
   { path: '**', redirectTo: 'marche' },
 ];

@@ -3,6 +3,7 @@ import { Observable, defer, finalize, interval, map, of, share } from 'rxjs';
 import { EUR_PAIR, KLINE_HISTORY } from '../config';
 import { Candle, ConnectionState, Ticker } from '../models';
 import { MarketEvent } from './binance-ws.service';
+import { GeckoQuote } from './coingecko.service';
 
 /**
  * Source de marché simulée, utilisée par la version de démonstration
@@ -19,6 +20,7 @@ const EUR_USDT = 1.16;
 const START: Record<string, number> = {
   BTC: 78000, ETH: 3400, SOL: 172, XRP: 0.64, BNB: 610, ADA: 0.47, DOGE: 0.16, AVAX: 31,
   LINK: 15.2, DOT: 5.6, LTC: 86, TRX: 0.17, POL: 0.42, UNI: 8.6, ATOM: 6.3, NEAR: 5.4,
+  WIGL: 0.034,
 };
 
 /** Scénarios injectés : dérive horaire, choc final, multiplicateur de volume final. */
@@ -96,6 +98,54 @@ export class DemoMarketService {
 
   klinesFor(symbols: string[]): Observable<Record<string, Candle[]>> {
     return of(Object.fromEntries(symbols.map((s) => [s, this.candles[s].map((c) => ({ ...c }))])));
+  }
+
+  /** Prix de clôture journalier simulé (USDT), pour la fiscalité. */
+  dailyClose(symbolOrId: string, date: Date): Observable<number | null> {
+    const t = this.tickers[symbolOrId] ?? this.tickers[symbolOrId.toUpperCase() + 'USDT'];
+    const symbol = t?.symbol ?? symbolOrId;
+    if (!t) return of(null);
+    const days = Math.max(0, (Date.now() - date.getTime()) / 86_400_000);
+    // tendance douce + bruit déterministe selon la date
+    const noise = Math.sin(date.getTime() / 86_400_000 + symbol.length) * 0.08;
+    return of(t.lastUsdt * Math.exp(-0.0012 * days + noise));
+  }
+
+  /** Historique journalier simulé, cohérent avec le prix courant. */
+  dailyKlines(symbol: string, limit = 1000): Observable<Candle[]> {
+    const t = this.tickers[symbol];
+    if (!t) return of([]);
+    const rng = mulberry32(symbol.length * 7919 + limit);
+    const today = Math.floor(Date.now() / 86_400_000) * 86_400_000;
+    const closes: number[] = [t.lastUsdt];
+    for (let i = 1; i < limit; i++) {
+      // marche aléatoire à rebours : léger biais haussier sur longue période
+      const vol = symbol === EUR_PAIR ? 0.004 : 0.07;
+      closes.unshift(closes[0] / Math.exp((symbol === EUR_PAIR ? 0 : 0.0009) + (rng() - 0.5) * vol));
+    }
+    return of(closes.map((c, i) => {
+      const open = i ? closes[i - 1] : c;
+      return {
+        openTime: today - (limit - 1 - i) * 86_400_000,
+        open, close: c, high: Math.max(open, c) * 1.01, low: Math.min(open, c) * 0.99,
+        volume: 0, closed: i < limit - 1,
+      };
+    }));
+  }
+
+  // ── interface « CoinGecko » ─────────────────────────────────────────────
+  quotes(ids: Record<string, string>): Observable<GeckoQuote[]> {
+    return of(Object.keys(ids).filter((a) => this.tickers[a + 'USDT']).map((asset) => {
+      const t = this.tickers[asset + 'USDT'];
+      return {
+        asset,
+        priceEur: t.lastUsdt / EUR_USDT,
+        change24h: ((t.lastUsdt - t.openUsdt) / t.openUsdt) * 100,
+        volume24hEur: 950 + Math.round(this.rng() * 200), // WIGL : très faible liquidité réelle
+        updatedAt: Date.now(),
+        candles: this.candles[asset + 'USDT'].map((c) => ({ ...c })),
+      };
+    }));
   }
 
   // ── interface « WebSocket » ─────────────────────────────────────────────

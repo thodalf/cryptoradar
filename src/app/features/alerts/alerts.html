@@ -1,0 +1,92 @@
+<header class="page-header">
+  <div>
+    <h1>Alertes</h1>
+    <p>Prévenu quand un seuil de prix, de variation ou de RSI est franchi — tant que l'app est ouverte</p>
+  </div>
+  @if (store.notificationPermission() === 'default') {
+    <button mat-stroked-button (click)="store.requestNotifications()">
+      <mat-icon>notifications_active</mat-icon> Activer les notifications
+    </button>
+  } @else if (store.notificationPermission() === 'granted') {
+    <span class="muted perm"><mat-icon>notifications_active</mat-icon> Notifications système activées</span>
+  } @else {
+    <span class="muted perm" matTooltip="Les alertes s'affichent dans l'app. Pour des notifications système, autorise-les dans le navigateur.">
+      <mat-icon>notifications_off</mat-icon> Notifications système indisponibles
+    </span>
+  }
+</header>
+
+<section class="panel pad">
+  <form [formGroup]="form" (ngSubmit)="add()" class="alert-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Actif</mat-label>
+      <mat-select formControlName="asset" (selectionChange)="suggest()">
+        @for (a of assets(); track a) { <mat-option [value]="a">{{ a }}</mat-option> }
+      </mat-select>
+      @if (current(); as r) {
+        <mat-hint>Cours {{ r.price | eur }} · 24h {{ r.change24h | pct }}</mat-hint>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="wide">
+      <mat-label>Condition</mat-label>
+      <mat-select formControlName="kind" (selectionChange)="suggest()">
+        @for (k of kinds; track k.kind) { <mat-option [value]="k.kind">{{ k.label }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Seuil</mat-label>
+      <input matInput type="number" step="any" formControlName="value" />
+      @if (unit()) { <span matTextSuffix>&nbsp;{{ unit() }}</span> }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="wide">
+      <mat-label>Note (facultatif)</mat-label>
+      <input matInput formControlName="note" placeholder="ex. renforcer la position" maxlength="80" />
+    </mat-form-field>
+    <button mat-flat-button type="submit" [disabled]="form.invalid"><mat-icon>add_alert</mat-icon> Créer l'alerte</button>
+  </form>
+</section>
+
+<section class="cols">
+  <div class="panel pad">
+    <h2>Actives <span class="count">{{ store.active().length }}</span></h2>
+    @for (a of store.active(); track a.id) {
+      <div class="row">
+        <mat-icon class="ico">notifications</mat-icon>
+        <div class="grow">
+          <div>{{ store.describe(a) }}</div>
+          <div class="muted small">{{ distance(a) }}@if (a.note) { · {{ a.note }} }</div>
+        </div>
+        <button mat-icon-button (click)="store.remove(a.id)" aria-label="Supprimer l'alerte" matTooltip="Supprimer">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    } @empty {
+      <p class="muted">Aucune alerte active. Crée-en une ci-dessus.</p>
+    }
+  </div>
+
+  <div class="panel pad">
+    <div class="head">
+      <h2>Déclenchées <span class="count">{{ store.triggered().length }}</span></h2>
+      @if (store.triggered().length) {
+        <button mat-button (click)="store.clearTriggered()">Effacer</button>
+      }
+    </div>
+    @for (a of store.triggered(); track a.id) {
+      <div class="row fired">
+        <mat-icon class="ico">notifications_active</mat-icon>
+        <div class="grow">
+          <div>{{ store.describe(a) }}</div>
+          <div class="muted small">
+            {{ a.triggeredAt | date: 'dd/MM HH:mm' }} à {{ a.triggeredPrice | eur }}@if (a.note) { · {{ a.note }} }
+          </div>
+        </div>
+        <button mat-icon-button (click)="store.rearm(a.id)" aria-label="Réarmer l'alerte" matTooltip="Réarmer">
+          <mat-icon>replay</mat-icon>
+        </button>
+      </div>
+    } @empty {
+      <p class="muted">Rien de déclenché pour l'instant.</p>
+    }
+  </div>
+</section>

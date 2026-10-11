@@ -14,6 +14,7 @@ import { map } from 'rxjs';
 import { DEMO_MODE } from './core/data-mode';
 import { MarketStore } from './core/state/market.store';
 import { OpportunitiesStore } from './core/state/opportunities.store';
+import { AlertsStore } from './core/state/alerts.store';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +29,8 @@ import { OpportunitiesStore } from './core/state/opportunities.store';
 export class App {
   protected readonly market = inject(MarketStore);
   protected readonly opps = inject(OpportunitiesStore);
+  /** Instancié dès le démarrage pour surveiller les alertes sur toutes les pages. */
+  protected readonly alerts = inject(AlertsStore);
 
   protected readonly isHandset = toSignal(
     inject(BreakpointObserver).observe('(max-width: 900px)').pipe(map((r) => r.matches)),
@@ -40,7 +43,15 @@ export class App {
     { path: '/marche', icon: 'monitoring', label: 'Marché' },
     { path: '/opportunites', icon: 'radar', label: 'Opportunités' },
     { path: '/portefeuille', icon: 'account_balance_wallet', label: 'Portefeuille' },
+    { path: '/alertes', icon: 'notifications', label: 'Alertes' },
+    { path: '/simulateur', icon: 'calendar_month', label: 'Simulateur DCA' },
+    { path: '/fiscalite', icon: 'receipt_long', label: 'Fiscalité' },
   ];
+
+  protected badge(path: string): number | null {
+    const n = path === '/opportunites' ? this.signalCount() : path === '/alertes' ? this.alerts.unseen() : 0;
+    return n || null;
+  }
 
   protected readonly signalCount = computed(() => {
     const c = this.opps.counts();

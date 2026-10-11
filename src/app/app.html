@@ -13,7 +13,7 @@
         <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive"
            [activated]="rla.isActive" (click)="isHandset() && drawer.close()">
           <mat-icon matListItemIcon
-                    [matBadge]="item.path === '/opportunites' && signalCount() ? signalCount() : null"
+                    [matBadge]="badge(item.path)"
                     matBadgeSize="small" matBadgeColor="accent">{{ item.icon }}</mat-icon>
           <span matListItemTitle>{{ item.label }}</span>
         </a>

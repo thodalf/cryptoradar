@@ -5,6 +5,18 @@ Application Angular personnelle : suivi du marché crypto en temps réel, détec
 - **Angular 22** (standalone, signals, zoneless) + **Angular Material 3** (thème sombre)
 - **Données de marché** : endpoints publics Binance (`data-api.binance.vision` / `data-stream.binance.vision`), sans clé et compatibles CORS
 - **Portefeuille** : import CSV (Wigl n'a pas d'API publique), stocké dans le navigateur
+- **WIGL** (jeton de Wigl, non listé sur Binance) : cours CoinGecko, rafraîchi chaque minute
+
+## Fonctionnalités
+
+| Page | Contenu |
+|---|---|
+| Marché | cours en euros en direct, fourchette 24h, RSI, mini-courbes, indice Fear & Greed |
+| Opportunités | survente/surachat RSI, pics de volume, mouvements atypiques, seuils réglables |
+| Portefeuille | positions au PRU, plus-values latentes/réalisées, répartition, allocation cible et rééquilibrage |
+| Alertes | seuils de prix, de variation 24h ou de RSI, notifications du navigateur |
+| Simulateur DCA | investissement programmé rejoué sur jusqu'à ~33 mois d'historique, comparé à un achat unique |
+| Fiscalité | plus-values imposables selon l'art. 150 VH bis (formulaire 2086), flat tax 31,4 %, seuil de 305 € |
 
 ## Démarrer
 

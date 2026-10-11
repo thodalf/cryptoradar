@@ -19,10 +19,29 @@ export class PortfolioStore {
   readonly transactions = signal<Transaction[]>(readLocal<Transaction[]>(KEY, []));
 
   readonly summary = computed(() => computePortfolio(this.transactions(), this.market.priceEur()));
+
+  /** Allocation cible en % par actif (somme idéalement = 100). */
+  readonly targets = signal<Record<string, number>>(readLocal<Record<string, number>>('cr.targets', {}));
+  readonly targetsTotal = computed(() => Object.values(this.targets()).reduce((a, b) => a + b, 0));
+
+  /** Écarts à l'allocation cible et montants pour rééquilibrer. */
+  readonly rebalance = computed(() => {
+    const s = this.summary();
+    const t = this.targets();
+    const assets = new Set([...s.holdings.filter((h) => h.value).map((h) => h.asset), ...Object.keys(t)]);
+    return [...assets].map((asset) => {
+      const h = s.holdings.find((x) => x.asset === asset);
+      const current = h?.weight ?? 0;
+      const target = (t[asset] ?? 0) / 100;
+      const amount = (target - current) * s.totalValue; // >0 acheter, <0 vendre
+      return { asset, current, target, drift: current - target, amount, price: h?.price ?? null };
+    }).sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+  });
   readonly isEmpty = computed(() => this.transactions().length === 0);
 
   constructor() {
     effect(() => writeLocal(KEY, this.transactions()));
+    effect(() => writeLocal('cr.targets', this.targets()));
   }
 
   /** Importe un CSV ; `replace` remplace l'historique, sinon fusionne sans doublons. */
@@ -36,6 +55,21 @@ export class PortfolioStore {
       });
     }
     return result;
+  }
+
+  setTarget(asset: string, pct: number | null): void {
+    this.targets.update((t) => {
+      const next = { ...t };
+      if (pct === null || !Number.isFinite(pct) || pct <= 0) delete next[asset];
+      else next[asset] = Math.min(100, pct);
+      return next;
+    });
+  }
+
+  /** Cible = répartition actuelle (point de départ pratique). */
+  targetsFromCurrent(): void {
+    this.targets.set(Object.fromEntries(this.summary().holdings
+      .filter((h) => h.weight > 0.001).map((h) => [h.asset, Math.round(h.weight * 1000) / 10])));
   }
 
   add(tx: Omit<Transaction, 'id'>): void {

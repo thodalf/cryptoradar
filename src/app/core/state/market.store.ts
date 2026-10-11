@@ -1,9 +1,12 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, bufferTime, catchError, filter, forkJoin, retry, switchMap, tap } from 'rxjs';
+import { EMPTY, bufferTime, catchError, filter, forkJoin, of, retry, switchMap, tap, timer } from 'rxjs';
+import { CoinGeckoService, GeckoQuote } from '../api/coingecko.service';
 import { BinanceRestService } from '../api/binance-rest.service';
 import { BinanceWsService, MarketEvent } from '../api/binance-ws.service';
-import { EUR_PAIR, KLINE_HISTORY, QUOTE, STABLECOINS, WIGL_ASSETS } from '../config';
+import {
+  COINGECKO_ASSETS, COINGECKO_POLL_MS, EUR_PAIR, KLINE_HISTORY, QUOTE, STABLECOINS, WIGL_ASSETS,
+} from '../config';
 import { Candle, MarketRow, Ticker } from '../models';
 import { rsi } from '../analysis/indicators';
 
@@ -15,10 +18,14 @@ import { rsi } from '../analysis/indicators';
 export class MarketStore {
   private readonly rest = inject(BinanceRestService);
   private readonly ws = inject(BinanceWsService);
+  private readonly gecko = inject(CoinGeckoService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly tickers = signal<Record<string, Ticker>>({});
+  /** Bougies 1h par symbole (clé « XXXUSDT », y compris pour les actifs CoinGecko). */
   readonly candles = signal<Record<string, Candle[]>>({});
+  /** Actifs cotés hors Binance (WIGL…), en euros. */
+  private readonly geckoQuotes = signal<Record<string, GeckoQuote>>({});
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly lastUpdate = signal<number | null>(null);
@@ -31,7 +38,7 @@ export class MarketStore {
     const fx = this.eurUsdt();
     if (!fx) return [];
     const candles = this.candles();
-    return Object.values(this.tickers())
+    const binance = Object.values(this.tickers())
       .filter((t) => t.symbol !== EUR_PAIR)
       .map((t) => {
         const closes = (candles[t.symbol] ?? []).map((c) => c.close);
@@ -44,9 +51,25 @@ export class MarketStore {
           low24h: t.lowUsdt / fx,
           rsi: rsi(closes),
           spark: closes.slice(-48),
+          source: 'binance' as const,
         };
-      })
-      .sort((a, b) => b.volume24h - a.volume24h);
+      });
+    const extra = Object.values(this.geckoQuotes()).map((q) => {
+      const c = candles[q.asset + QUOTE] ?? [];
+      const last24 = c.slice(-24);
+      return {
+        asset: q.asset,
+        price: q.priceEur,
+        change24h: q.change24h,
+        volume24h: q.volume24hEur,
+        high24h: last24.length ? Math.max(...last24.map((k) => k.high), q.priceEur) : q.priceEur,
+        low24h: last24.length ? Math.min(...last24.map((k) => k.low), q.priceEur) : q.priceEur,
+        rsi: rsi(c.map((k) => k.close)),
+        spark: c.slice(-48).map((k) => k.close),
+        source: 'coingecko' as const,
+      };
+    });
+    return [...binance, ...extra].sort((a, b) => b.volume24h - a.volume24h);
   });
 
   /** Prix EUR par actif, stablecoins inclus — utilisé par le portefeuille. */
@@ -98,6 +121,19 @@ export class MarketStore {
       }),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe((batch) => this.apply(batch));
+
+    // Actifs hors Binance : interrogation périodique de CoinGecko
+    timer(0, COINGECKO_POLL_MS).pipe(
+      switchMap(() => this.gecko.quotes(COINGECKO_ASSETS).pipe(catchError(() => of(null)))),
+      filter((q): q is GeckoQuote[] => q !== null),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((quotes) => {
+      this.geckoQuotes.set(Object.fromEntries(quotes.map((q) => [q.asset, q])));
+      this.candles.update((prev) => ({
+        ...prev,
+        ...Object.fromEntries(quotes.map((q) => [q.asset + QUOTE, q.candles])),
+      }));
+    });
   }
 
   private apply(batch: MarketEvent[]): void {

@@ -11,6 +11,20 @@ export const WIGL_ASSETS: readonly string[] = [
   'LINK', 'DOT', 'LTC', 'TRX', 'POL', 'UNI', 'ATOM', 'NEAR',
 ];
 
+/**
+ * Actifs absents de Binance, cotés via CoinGecko (id CoinGecko → ticker).
+ * WIGL, le jeton de Wigl, ne s'échange que sur Uniswap (Ethereum).
+ */
+export const COINGECKO_ASSETS: Readonly<Record<string, string>> = {
+  WIGL: 'wigl',
+};
+export const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+/** L'API publique CoinGecko limite le débit : une mise à jour par minute suffit. */
+export const COINGECKO_POLL_MS = 60_000;
+
+/** Indice Fear & Greed crypto (alternative.me), public et sans clé. */
+export const FEAR_GREED_API = 'https://api.alternative.me/fng/';
+
 /** Actifs considérés comme des stablecoins (valorisés sans flux de marché). */
 export const STABLECOINS: Readonly<Record<string, number>> = {
   EUR: 1,
@@ -37,5 +51,5 @@ export const ASSET_NAMES: Readonly<Record<string, string>> = {
   BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', XRP: 'XRP', BNB: 'BNB', ADA: 'Cardano',
   DOGE: 'Dogecoin', AVAX: 'Avalanche', LINK: 'Chainlink', DOT: 'Polkadot', LTC: 'Litecoin',
   TRX: 'Tron', POL: 'Polygon', UNI: 'Uniswap', ATOM: 'Cosmos', NEAR: 'NEAR',
-  USDC: 'USD Coin', USDT: 'Tether', EURC: 'Euro Coin',
+  USDC: 'USD Coin', USDT: 'Tether', EURC: 'Euro Coin', WIGL: 'Wigl',
 };

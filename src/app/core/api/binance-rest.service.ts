@@ -52,6 +52,21 @@ export class BinanceRestService {
       .pipe(map((rows) => rows.map(toCandle)));
   }
 
+  /** Clôture journalière (USDT) du jour donné — pour la fiscalité. */
+  dailyClose(symbol: string, date: Date): Observable<number | null> {
+    const day = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const params = new HttpParams()
+      .set('symbol', symbol).set('interval', '1d').set('startTime', day).set('limit', 1);
+    return this.http
+      .get<RawKline[]>(`${BINANCE_REST}/klines`, { params })
+      .pipe(map((rows) => (rows.length ? +rows[0][4] : null)));
+  }
+
+  /** Bougies journalières (jusqu'à 1000 jours) — pour le simulateur DCA. */
+  dailyKlines(symbol: string, limit = 1000): Observable<Candle[]> {
+    return this.klines(symbol, '1d', limit);
+  }
+
   /** Charge l'historique 1h de plusieurs symboles en parallèle. */
   klinesFor(symbols: string[]): Observable<Record<string, Candle[]>> {
     if (!symbols.length) return of({});

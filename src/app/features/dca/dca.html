@@ -1,0 +1,96 @@
+<header class="page-header">
+  <div>
+    <h1>Simulateur d'investissement programmé</h1>
+    <p>Et si tu avais investi un montant fixe à intervalle régulier ? Rejoué sur l'historique réel</p>
+  </div>
+</header>
+
+<section class="panel pad controls">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Actif</mat-label>
+    <mat-select [value]="asset()" (selectionChange)="asset.set($event.value)">
+      @for (a of assets(); track a) { <mat-option [value]="a">{{ a }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Montant par achat</mat-label>
+    <input matInput type="number" min="1" step="10" [ngModel]="amount()" (ngModelChange)="amount.set(+$event || 0)" />
+    <span matTextSuffix>&nbsp;€</span>
+  </mat-form-field>
+
+  <mat-button-toggle-group [value]="everyDays()" (change)="everyDays.set($event.value)" hideSingleSelectionIndicator
+                           aria-label="Fréquence">
+    <mat-button-toggle [value]="7">Hebdo</mat-button-toggle>
+    <mat-button-toggle [value]="14">2 semaines</mat-button-toggle>
+    <mat-button-toggle [value]="30">Mensuel</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <label class="slider">
+    <span>Durée : <b>{{ months() }} mois</b></span>
+    <mat-slider [min]="3" [max]="maxMonths()" step="1" discrete>
+      <input matSliderThumb [value]="months()" (valueChange)="months.set($event)" />
+    </mat-slider>
+  </label>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="fee">
+    <mat-label>Frais par achat</mat-label>
+    <input matInput type="number" min="0" max="10" step="0.1" [ngModel]="feePct()" (ngModelChange)="feePct.set(+$event || 0)" />
+    <span matTextSuffix>&nbsp;%</span>
+  </mat-form-field>
+</section>
+
+@if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+@if (error(); as e) { <p class="down">{{ e }}</p> }
+
+@if (result(); as r) {
+  <section class="kpis">
+    <div class="kpi"><div class="label">Total investi</div><div class="value num">{{ r.invested | eur: 'amount' }}</div>
+      <div class="muted small">{{ r.buys }} achats</div></div>
+    <div class="kpi"><div class="label">Valeur aujourd'hui</div>
+      <div class="value num" [class.up]="r.gainPct > 0" [class.down]="r.gainPct < 0">{{ r.value | eur: 'amount' }}</div>
+      <div class="small num" [class.up]="r.gainPct > 0" [class.down]="r.gainPct < 0">{{ r.gainPct | pct }}</div></div>
+    <div class="kpi"><div class="label">Prix moyen payé</div><div class="value num">{{ r.avgPrice | eur }}</div>
+      <div class="muted small">{{ r.quantity | qty }} {{ asset() }}</div></div>
+    <div class="kpi"><div class="label">En une seule fois au départ</div>
+      <div class="value num">{{ r.lumpSumValue | eur: 'amount' }}</div>
+      <div class="small num" [class.up]="r.lumpSumGainPct > 0" [class.down]="r.lumpSumGainPct < 0">{{ r.lumpSumGainPct | pct }}</div></div>
+    <div class="kpi"><div class="label">Pire moment</div>
+      <div class="value num" [class.down]="r.maxDrawdownPct < 0">{{ r.maxDrawdownPct | pct }}</div>
+      <div class="muted small">vs montant investi</div></div>
+  </section>
+
+  @if (chart(); as c) {
+    <section class="panel pad">
+      <div class="legend">
+        <span><i class="sw value"></i>Valeur du portefeuille</span>
+        <span><i class="sw invested"></i>Montant investi</span>
+      </div>
+      <div class="chart-wrap">
+        <svg [attr.viewBox]="'0 0 ' + c.W + ' ' + c.H" preserveAspectRatio="none" role="img"
+             aria-label="Évolution de la valeur du portefeuille comparée au montant investi">
+          @for (t of c.ticks; track t.y) {
+            <line x1="0" [attr.x2]="c.W" [attr.y1]="t.y" [attr.y2]="t.y" class="grid" />
+          }
+          <path [attr.d]="c.area" class="area" />
+          <path [attr.d]="c.investedLine" class="invested-line" />
+          <path [attr.d]="c.valueLine" class="value-line" />
+          <circle [attr.cx]="c.endX" [attr.cy]="c.endY" r="4" class="dot" />
+        </svg>
+        <div class="y-labels">
+          @for (t of c.ticks; track t.y) {
+            <span class="num" [style.top.%]="(t.y / c.H) * 100">{{ t.label | eur: 'amount' }}</span>
+          }
+        </div>
+      </div>
+      <div class="x-labels muted small num">
+        <span>{{ c.start | date: 'MMM yyyy' }}</span><span>{{ c.end | date: 'MMM yyyy' }}</span>
+      </div>
+    </section>
+  }
+
+  <p class="muted small foot">
+    Achat au cours de clôture du jour, converti en euros au taux du jour. Les performances passées ne préjugent pas
+    des performances futures. L'investissement programmé lisse le prix d'entrée mais ne protège pas d'une baisse durable.
+  </p>
+}

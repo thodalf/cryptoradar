@@ -8,12 +8,14 @@ import { DEMO_MODE } from './core/data-mode';
 import { BinanceRestService } from './core/api/binance-rest.service';
 import { BinanceWsService } from './core/api/binance-ws.service';
 import { DemoMarketService } from './core/api/demo-market.service';
+import { CoinGeckoService } from './core/api/coingecko.service';
 
 /** En mode démo, la source simulée remplace les deux services Binance. */
 const marketProviders: Provider[] = DEMO_MODE
   ? [
       { provide: BinanceRestService, useExisting: DemoMarketService },
       { provide: BinanceWsService, useExisting: DemoMarketService },
+      { provide: CoinGeckoService, useExisting: DemoMarketService },
     ]
   : [];
 

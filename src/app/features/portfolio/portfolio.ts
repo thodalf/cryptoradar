@@ -46,6 +46,7 @@ export class Portfolio {
   protected readonly assets = [...WIGL_ASSETS, 'USDC', 'USDT', 'EURC'];
   protected readonly palette = PALETTE;
   protected readonly summary = this.store.summary;
+  protected readonly Math = Math;
 
   protected readonly holdingColumns = ['asset', 'quantity', 'avgCost', 'price', 'value', 'pnl', 'weight'];
   protected readonly txColumns = ['date', 'type', 'asset', 'quantity', 'priceEur', 'total', 'feeEur', 'actions'];

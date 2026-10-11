@@ -12,6 +12,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ASSET_NAMES } from '../../core/config';
 import { MarketRow } from '../../core/models';
 import { MarketStore } from '../../core/state/market.store';
+import { FearGreedService } from '../../core/api/fear-greed.service';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { EurCompactPipe, EurPipe, PctPipe } from '../../shared/format.pipes';
 import { Sparkline } from '../../shared/sparkline';
 
@@ -32,6 +35,14 @@ export class Dashboard {
   protected readonly columns = ['asset', 'price', 'change24h', 'range', 'volume24h', 'rsi', 'spark'];
 
   protected readonly query = signal('');
+
+  /** Sentiment global du marché sur 30 jours (null si l'API ne répond pas). */
+  protected readonly fearGreed = toSignal(
+    inject(FearGreedService).history(30).pipe(catchError(() => of(null))),
+    { initialValue: null },
+  );
+  protected readonly fgNow = computed(() => this.fearGreed()?.at(-1) ?? null);
+  protected readonly fgSpark = computed(() => this.fearGreed()?.map((p) => p.value) ?? []);
   protected readonly dataSource = new MatTableDataSource<MarketRow>([]);
   private readonly sort = viewChild(MatSort);
 

@@ -1,0 +1,110 @@
+<header class="page-header">
+  <div>
+    <h1>Fiscalité</h1>
+    <p>Plus-values imposables par la méthode française (art. 150 VH bis, formulaire 2086)</p>
+  </div>
+  <div class="rate">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Taux d'imposition</mat-label>
+      <input matInput type="number" step="0.1" min="0" max="100"
+             [value]="(store.rate() * 100).toFixed(1)" (change)="setRate($any($event.target).value)" />
+      <span matTextSuffix>&nbsp;%</span>
+    </mat-form-field>
+    <button mat-icon-button (click)="store.valuate()" matTooltip="Recalculer avec les cours historiques"
+            aria-label="Recalculer"><mat-icon>refresh</mat-icon></button>
+  </div>
+</header>
+
+@if (store.status() === 'loading') { <mat-progress-bar mode="indeterminate" /> }
+
+@if (!store.snapshots().length) {
+  <section class="panel pad empty">
+    <mat-icon>receipt_long</mat-icon>
+    <p>Aucune vente contre euros dans ton historique : rien d'imposable pour l'instant.<br />
+      <span class="muted">Les échanges crypto contre crypto ne sont pas imposables. Ajoute tes opérations dans
+        <a routerLink="/portefeuille">Portefeuille</a>.</span></p>
+  </section>
+} @else {
+  @if (store.missing().length) {
+    <p class="warn"><mat-icon>info</mat-icon>
+      Cours historique introuvable pour {{ store.missing().join(', ') }} : la valeur du portefeuille est sous-estimée.
+      Saisis la valeur réelle dans la colonne « Valeur portefeuille ».</p>
+  }
+
+  @for (y of store.years(); track y.year) {
+    <section class="panel year">
+      <div class="year-head">
+        <h2>{{ y.year }}</h2>
+        <div class="kpis-inline">
+          <div><span class="label">Cessions</span><b class="num">{{ y.totalSales | eur: 'amount' }}</b></div>
+          <div><span class="label">Plus-value nette</span>
+            <b class="num" [class.up]="y.netGain > 0" [class.down]="y.netGain < 0">{{ y.netGain | eur: 'amount' }}</b></div>
+          <div><span class="label">Impôt estimé</span><b class="num">{{ y.tax | eur: 'amount' }}</b></div>
+        </div>
+        <button mat-stroked-button (click)="export2086(y)"><mat-icon>download</mat-icon> Récap 2086</button>
+      </div>
+
+      @if (y.exempt) {
+        <p class="note ok"><mat-icon>check_circle</mat-icon>
+          Cessions totales ≤ {{ threshold }} € : l'année est exonérée. À déclarer quand même si tu as des comptes à l'étranger (formulaire 3916-bis).</p>
+      } @else if (y.netGain < 0) {
+        <p class="note"><mat-icon>info</mat-icon>
+          Moins-value nette : pas d'impôt, mais elle n'est pas reportable sur les années suivantes.</p>
+      }
+      @if (!y.complete) {
+        <p class="note warn-txt"><mat-icon>warning</mat-icon>
+          Calcul incomplet : une valeur de portefeuille manque. Les lignes suivantes en dépendent.</p>
+      }
+
+      <div class="table-scroll">
+        <table class="tax-table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Actif</th>
+              <th class="right" matTooltip="Valeur de tous tes actifs numériques juste avant la vente">Valeur portefeuille</th>
+              <th class="right">Prix de cession</th>
+              <th class="right">Frais</th>
+              <th class="right" matTooltip="Prix total d'acquisition restant avant la vente">Prix d'acquisition</th>
+              <th class="right" matTooltip="Part du prix d'acquisition imputée à cette vente">Fraction imputée</th>
+              <th class="right">+/- value</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of y.lines; track l.tx.id) {
+              <tr>
+                <td class="num">{{ l.tx.date | date: 'dd/MM/yyyy' }}</td>
+                <td><b>{{ l.tx.asset }}</b> <span class="muted small">{{ l.tx.quantity | qty }}</span></td>
+                <td class="right">
+                  <input class="cell-input num" [value]="l.portfolioValue === null ? '' : l.portfolioValue.toFixed(2)"
+                         (change)="setOverride(l.tx.id, $any($event.target).value)"
+                         [attr.aria-label]="'Valeur du portefeuille le ' + (l.tx.date | date: 'dd/MM/yyyy')" />
+                </td>
+                <td class="right num">{{ l.grossPrice | eur: 'amount' }}</td>
+                <td class="right num">{{ l.fees | eur: 'amount' }}</td>
+                <td class="right num">{{ l.acquisitionTotal | eur: 'amount' }}</td>
+                <td class="right num">{{ l.acquisitionShare | eur: 'amount' }}</td>
+                <td class="right num" [class.up]="(l.gain ?? 0) > 0" [class.down]="(l.gain ?? 0) < 0">{{ l.gain | eur: 'amount' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+}
+
+<mat-accordion class="howto">
+  <mat-expansion-panel>
+    <mat-expansion-panel-header><mat-panel-title>Comment c'est calculé</mat-panel-title></mat-expansion-panel-header>
+    <div class="explain">
+      <p><b>Plus-value = prix de cession net − prix total d'acquisition × (prix de cession ÷ valeur globale du portefeuille).</b></p>
+      <p>La valeur globale est estimée avec les cours de clôture du jour de la vente (Binance, CoinGecko pour WIGL).
+        Si ton relevé Wigl indique une autre valeur, saisis-la : elle remplace l'estimation.</p>
+      <p>Seules les ventes contre euros (ou paiements en crypto) sont imposables. Les cashbacks et récompenses
+        entrent avec un coût d'acquisition nul. Taux par défaut : flat tax 2026 de {{ (defaultRate * 100).toFixed(1) }} %
+        (12,8 % d'impôt + 18,6 % de prélèvements sociaux). Option possible pour le barème progressif.</p>
+      <p class="muted">Estimation indicative, pas un conseil fiscal. Pour la déclaration officielle, vérifie avec un outil
+        dédié ou un professionnel.</p>
+    </div>
+  </mat-expansion-panel>
+</mat-accordion>
