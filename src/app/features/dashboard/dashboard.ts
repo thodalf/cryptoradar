@@ -13,6 +13,9 @@ import { ASSET_NAMES } from '../../core/config';
 import { MarketRow } from '../../core/models';
 import { MarketStore } from '../../core/state/market.store';
 import { FearGreedService } from '../../core/api/fear-greed.service';
+import { NewsStore } from '../../core/state/news.store';
+import { NewsItemView } from '../../shared/news-item';
+import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
 import { EurCompactPipe, EurPipe, PctPipe } from '../../shared/format.pipes';
@@ -23,7 +26,7 @@ import { Sparkline } from '../../shared/sparkline';
   imports: [
     FormsModule, MatTableModule, MatSortModule, MatFormFieldModule, MatInputModule,
     MatIconModule, MatProgressBarModule, MatTooltipModule,
-    EurPipe, EurCompactPipe, PctPipe, Sparkline,
+    EurPipe, EurCompactPipe, PctPipe, Sparkline, NewsItemView, RouterLink,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -31,6 +34,7 @@ import { Sparkline } from '../../shared/sparkline';
 })
 export class Dashboard {
   protected readonly market = inject(MarketStore);
+  protected readonly news = inject(NewsStore);
   protected readonly names = ASSET_NAMES;
   protected readonly columns = ['asset', 'price', 'change24h', 'range', 'volume24h', 'rsi', 'spark'];
 

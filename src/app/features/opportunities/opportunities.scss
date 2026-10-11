@@ -91,3 +91,8 @@
 @media (max-width: 700px) {
   .hide-sm { display: none; }
 }
+.news-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: var(--mat-sys-label-medium); color: var(--mat-sys-primary); text-decoration: none;
+  &:hover { text-decoration: underline; }
+}

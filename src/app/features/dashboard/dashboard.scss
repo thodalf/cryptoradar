@@ -92,3 +92,19 @@ table { width: 100%; background: transparent; }
   font-size: 10px;
   border: 1px solid var(--mat-sys-outline-variant);
 }
+
+.news { margin-top: 20px; padding: 14px 18px 6px; }
+.news-head {
+  display: flex; justify-content: space-between; align-items: center;
+  h2 { font: var(--mat-sys-title-medium); margin: 0; }
+}
+.more {
+  display: inline-flex; align-items: center; gap: 4px;
+  font: var(--mat-sys-label-large); color: var(--mat-sys-primary); text-decoration: none;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  column-gap: 24px;
+}

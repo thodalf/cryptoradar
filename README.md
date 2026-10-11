@@ -14,6 +14,7 @@ Application Angular personnelle : suivi du marché crypto en temps réel, détec
 | Marché | cours en euros en direct, fourchette 24h, RSI, mini-courbes, indice Fear & Greed |
 | Opportunités | survente/surachat RSI, pics de volume, mouvements atypiques, seuils réglables |
 | Portefeuille | positions au PRU, plus-values latentes/réalisées, répartition, allocation cible et rééquilibrage |
+| Actualité | flux Cryptoast, Journal du Coin, Cointribune, CoinDesk, Cointelegraph et presse sur Wigl, filtrables par actif et par thème (via la fonction Netlify `/api/news`) |
 | Alertes | seuils de prix, de variation 24h ou de RSI, notifications du navigateur |
 | Simulateur DCA | investissement programmé rejoué sur jusqu'à ~33 mois d'historique, comparé à un achat unique |
 | Fiscalité | plus-values imposables selon l'art. 150 VH bis (formulaire 2086), flat tax 31,4 %, seuil de 305 € |

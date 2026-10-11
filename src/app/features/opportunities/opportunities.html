@@ -93,6 +93,12 @@
           <dd class="num">{{ o.volumeRatio === null ? '—' : '×' + o.volumeRatio.toFixed(1) }}</dd></div>
       </dl>
 
+      @if (newsCount()[o.asset]; as n) {
+        <a class="news-link" routerLink="/actualite" [queryParams]="{ actif: o.asset }">
+          <span class="material-symbols-outlined small">newspaper</span>
+          {{ n }} article{{ n > 1 ? 's' : '' }} récent{{ n > 1 ? 's' : '' }} sur {{ o.asset }}
+        </a>
+      }
       @if (o.signals.length) {
         <ul class="signals">
           @for (s of o.signals; track s.kind) {

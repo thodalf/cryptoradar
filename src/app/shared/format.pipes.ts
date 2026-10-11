@@ -55,3 +55,19 @@ export class QtyPipe implements PipeTransform {
     return v === null || v === undefined ? '—' : qtyFmt.format(v);
   }
 }
+
+const rtf = new Intl.RelativeTimeFormat('fr-FR', { numeric: 'auto' });
+
+/** « il y a 3 h », « hier »… */
+@Pipe({ name: 'ago' })
+export class AgoPipe implements PipeTransform {
+  transform(t: number | null | undefined): string {
+    if (!t) return '';
+    const s = (t - Date.now()) / 1000;
+    const abs = Math.abs(s);
+    if (abs < 60) return 'à l’instant';
+    if (abs < 3600) return rtf.format(Math.round(s / 60), 'minute');
+    if (abs < 86400) return rtf.format(Math.round(s / 3600), 'hour');
+    return rtf.format(Math.round(s / 86400), 'day');
+  }
+}

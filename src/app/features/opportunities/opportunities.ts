@@ -12,6 +12,8 @@ import { ASSET_NAMES, QUOTE } from '../../core/config';
 import { SignalSide, Thresholds } from '../../core/models';
 import { MarketStore } from '../../core/state/market.store';
 import { OpportunitiesStore } from '../../core/state/opportunities.store';
+import { NewsStore } from '../../core/state/news.store';
+import { RouterLink } from '@angular/router';
 import { EurPipe, PctPipe } from '../../shared/format.pipes';
 import { Sparkline } from '../../shared/sparkline';
 
@@ -22,7 +24,7 @@ type Filter = 'all' | SignalSide;
   imports: [
     FormsModule, MatButtonModule, MatButtonToggleModule, MatExpansionModule, MatIconModule,
     MatProgressBarModule, MatSliderModule, MatSlideToggleModule, MatTooltipModule,
-    EurPipe, PctPipe, Sparkline,
+    EurPipe, PctPipe, Sparkline, RouterLink,
   ],
   templateUrl: './opportunities.html',
   styleUrl: './opportunities.scss',
@@ -32,6 +34,14 @@ export class Opportunities {
   protected readonly store = inject(OpportunitiesStore);
   protected readonly market = inject(MarketStore);
   protected readonly names = ASSET_NAMES;
+
+  /** Nombre d'articles récents citant chaque actif (contexte d'un signal). */
+  private readonly news = inject(NewsStore);
+  protected readonly newsCount = computed(() => {
+    const m: Record<string, number> = {};
+    for (const n of this.news.items()) for (const a of n.assets) m[a] = (m[a] ?? 0) + 1;
+    return m;
+  });
 
   protected readonly filter = signal<Filter>('all');
   protected readonly showQuiet = signal(false);

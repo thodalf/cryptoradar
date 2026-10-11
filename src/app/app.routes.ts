@@ -18,6 +18,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/portfolio/portfolio').then((m) => m.Portfolio),
   },
   {
+    path: 'actualite',
+    title: 'Actualité · Crypto Radar',
+    loadComponent: () => import('./features/news/news').then((m) => m.News),
+  },
+  {
     path: 'alertes',
     title: 'Alertes · Crypto Radar',
     loadComponent: () => import('./features/alerts/alerts').then((m) => m.Alerts),

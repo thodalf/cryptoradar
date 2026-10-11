@@ -15,6 +15,7 @@ import { DEMO_MODE } from './core/data-mode';
 import { MarketStore } from './core/state/market.store';
 import { OpportunitiesStore } from './core/state/opportunities.store';
 import { AlertsStore } from './core/state/alerts.store';
+import { NewsStore } from './core/state/news.store';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +44,7 @@ export class App {
     { path: '/marche', icon: 'monitoring', label: 'Marché' },
     { path: '/opportunites', icon: 'radar', label: 'Opportunités' },
     { path: '/portefeuille', icon: 'account_balance_wallet', label: 'Portefeuille' },
+    { path: '/actualite', icon: 'newspaper', label: 'Actualité' },
     { path: '/alertes', icon: 'notifications', label: 'Alertes' },
     { path: '/simulateur', icon: 'calendar_month', label: 'Simulateur DCA' },
     { path: '/fiscalite', icon: 'receipt_long', label: 'Fiscalité' },
@@ -70,5 +72,6 @@ export class App {
   constructor() {
     inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
     this.market.start();
+    inject(NewsStore).start();
   }
 }

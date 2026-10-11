@@ -1,0 +1,31 @@
+.pad { padding: 18px; }
+.small { font: var(--mat-sys-body-small); }
+.note {
+  display: flex; align-items: center; gap: 8px;
+  font: var(--mat-sys-body-small); color: var(--cr-watch);
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+.error {
+  display: flex; gap: 14px; align-items: center; margin-bottom: 16px; color: var(--cr-down);
+  p { margin: 0; color: var(--mat-sys-on-surface-variant); }
+  code { font-family: var(--cr-mono); font-size: 0.9em; }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .side { order: -1; }
+}
+
+.feed { padding: 4px 18px 8px; min-width: 0; }
+.feed > :first-child ::ng-deep .item { border-top: 0; }
+.empty { padding: 24px 0; }
+
+.side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
+h2 { font: var(--mat-sys-title-small); margin: 0 0 10px; }
+.n { margin-left: 4px; opacity: 0.6; font-family: var(--cr-mono); font-size: 11px; }

@@ -90,3 +90,15 @@ export interface Holding {
   pnlPct: number | null;
   weight: number;           // part du portefeuille (0..1)
 }
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  lang: 'fr' | 'en';
+  publishedAt: number;
+  assets: string[];
+  topics: string[];
+}

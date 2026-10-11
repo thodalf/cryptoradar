@@ -124,3 +124,17 @@
     </table>
   </div>
 </section>
+
+@if (news.latest().length) {
+  <section class="panel news">
+    <div class="news-head">
+      <h2>À la une</h2>
+      <a routerLink="/actualite" class="more">Toute l'actualité <mat-icon>arrow_forward</mat-icon></a>
+    </div>
+    <div class="news-grid">
+      @for (n of news.latest(); track n.id) {
+        <app-news-item [item]="n" [compact]="true" />
+      }
+    </div>
+  </section>
+}

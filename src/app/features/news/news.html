@@ -1,0 +1,66 @@
+<header class="page-header">
+  <div>
+    <h1>Actualité</h1>
+    <p>
+      Cryptoast, Journal du Coin, Cointribune, CoinDesk, Cointelegraph et la presse sur Wigl
+      @if (store.updatedAt(); as u) { · mise à jour {{ u | ago }} }
+    </p>
+  </div>
+  <mat-button-toggle-group [value]="scope()" (change)="scope.set($event.value)" hideSingleSelectionIndicator
+                           aria-label="Périmètre">
+    <mat-button-toggle value="all">Tout</mat-button-toggle>
+    <mat-button-toggle value="mine" [disabled]="!held().length">Mes actifs</mat-button-toggle>
+    <mat-button-toggle value="fr">En français</mat-button-toggle>
+  </mat-button-toggle-group>
+</header>
+
+@if (demo) {
+  <p class="note"><mat-icon>info</mat-icon>
+    Version démo : sélection figée de titres réels de la semaine. La version en ligne charge l'actualité en direct.</p>
+}
+@if (store.status() === 'loading') { <mat-progress-bar mode="indeterminate" /> }
+@if (store.status() === 'error') {
+  <section class="panel pad error">
+    <mat-icon>cloud_off</mat-icon>
+    <p>L'actualité n'a pas pu être chargée. Elle passe par la fonction <code>/api/news</code> du site Netlify,
+      absente en développement local (<code>ng serve</code>) : lance <code>netlify dev</code> pour l'avoir.</p>
+  </section>
+}
+
+<div class="layout">
+  <section class="panel feed">
+    @for (it of filtered(); track it.id) {
+      <app-news-item [item]="it" [held]="held()" (assetClick)="toggleAsset($event)" />
+    } @empty {
+      @if (store.status() === 'ok') {
+        <p class="muted empty">Aucun article ne correspond à ces filtres.</p>
+      }
+    }
+  </section>
+
+  <aside class="side">
+    <div class="panel pad">
+      <h2>Par actif</h2>
+      <mat-chip-listbox aria-label="Filtrer par actif">
+        @for (a of assetCounts(); track a.key) {
+          <mat-chip-option [selected]="asset() === a.key" (click)="toggleAsset(a.key)">
+            {{ a.key }} <span class="n">{{ a.n }}</span>
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+    </div>
+    <div class="panel pad">
+      <h2>Par thème</h2>
+      <mat-chip-listbox aria-label="Filtrer par thème">
+        @for (t of topicCounts(); track t.key) {
+          <mat-chip-option [selected]="topic() === t.key" (click)="toggleTopic(t.key)">
+            {{ t.key }} <span class="n">{{ t.n }}</span>
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+    </div>
+    @if (store.failedSources().length) {
+      <p class="muted small">Indisponible pour l'instant : {{ store.failedSources().join(', ') }}</p>
+    }
+  </aside>
+</div>
