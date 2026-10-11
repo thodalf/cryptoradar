@@ -1,0 +1,80 @@
+.shell { height: 100vh; }
+
+.sidenav {
+  width: 248px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 20px 12px;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: 0.02em;
+}
+.brand-icon { color: var(--mat-sys-primary); }
+
+.disclaimer {
+  margin: auto 20px 20px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  position: absolute;
+  bottom: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--mat-sys-surface) 85%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+.spacer { flex: 1; }
+
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mat-sys-outline);
+  }
+  &--live .dot { background: var(--cr-up); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cr-up) 25%, transparent); }
+  &--connecting .dot, &--reconnecting .dot { background: var(--cr-watch); animation: pulse 1s infinite alternate; }
+  &--offline .dot { background: var(--cr-down); }
+}
+
+@keyframes pulse { to { opacity: 0.3; } }
+
+.content {
+  padding: 24px clamp(16px, 3vw, 32px) 48px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-large);
+  color: var(--cr-watch);
+  background: color-mix(in srgb, var(--cr-watch) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cr-watch) 40%, transparent);
+  white-space: nowrap;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+@media (max-width: 520px) {
+  .demo-pill { font-size: 12px; padding: 3px 8px; }
+}

@@ -1,0 +1,112 @@
+<header class="page-header">
+  <div>
+    <h1>Marché</h1>
+    <p>Cryptos proposées sur Wigl · prix en euros, mis à jour en direct</p>
+  </div>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput placeholder="Rechercher un actif" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+  </mat-form-field>
+</header>
+
+@if (market.error(); as err) {
+  <div class="panel error"><mat-icon>cloud_off</mat-icon> {{ err }}</div>
+}
+
+@if (kpis(); as k) {
+  <section class="kpis">
+    <div class="kpi">
+      <div class="label">Meilleure perf. 24h</div>
+      <div class="value">{{ k.best.asset }} <span class="num up">{{ k.best.change24h | pct }}</span></div>
+    </div>
+    <div class="kpi">
+      <div class="label">Pire perf. 24h</div>
+      <div class="value">{{ k.worst.asset }} <span class="num down">{{ k.worst.change24h | pct }}</span></div>
+    </div>
+    <div class="kpi">
+      <div class="label">Variation moyenne</div>
+      <div class="value num" [class.up]="k.avgChange > 0" [class.down]="k.avgChange < 0">{{ k.avgChange | pct }}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Actifs en hausse</div>
+      <div class="value num">{{ k.breadth }} / {{ k.total }}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Volume 24h cumulé</div>
+      <div class="value num">{{ k.volume | eurCompact }}</div>
+    </div>
+  </section>
+}
+
+<section class="panel">
+  @if (market.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+  <div class="table-scroll">
+    <table mat-table [dataSource]="dataSource" matSort matSortActive="volume24h" matSortDirection="desc">
+
+      <ng-container matColumnDef="asset">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Actif</th>
+        <td mat-cell *matCellDef="let r">
+          <div class="asset">
+            <span class="avatar">{{ r.asset.slice(0, 1) }}</span>
+            <div>
+              <div class="ticker">{{ r.asset }}</div>
+              <div class="name muted">{{ names[r.asset] ?? '' }}</div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="price">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">Prix</th>
+        <td mat-cell *matCellDef="let r" class="right num price"
+            [class.flash-up]="flash()[r.asset] === 'up'" [class.flash-down]="flash()[r.asset] === 'down'">
+          {{ r.price | eur }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="change24h">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">24h</th>
+        <td mat-cell *matCellDef="let r" class="right num" [class.up]="r.change24h > 0" [class.down]="r.change24h < 0">
+          {{ r.change24h | pct }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="range">
+        <th mat-header-cell *matHeaderCellDef class="hide-sm">Fourchette 24h</th>
+        <td mat-cell *matCellDef="let r" class="hide-sm">
+          <div class="range" [matTooltip]="'Bas ' + (r.low24h | eur) + ' · Haut ' + (r.high24h | eur)">
+            <div class="range-track"><div class="range-dot" [style.left.%]="rangePos(r)"></div></div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="volume24h">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">Volume 24h</th>
+        <td mat-cell *matCellDef="let r" class="right num">{{ r.volume24h | eurCompact }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="rsi">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right"
+            matTooltip="RSI 14 périodes sur bougies 1h">RSI 1h</th>
+        <td mat-cell *matCellDef="let r" class="right">
+          <span [class]="rsiClass(r.rsi)" class="num">{{ r.rsi === null ? '—' : r.rsi.toFixed(0) }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="spark">
+        <th mat-header-cell *matHeaderCellDef class="right hide-sm">48 h</th>
+        <td mat-cell *matCellDef="let r" class="right hide-sm"><app-sparkline [values]="r.spark" /></td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty" [attr.colspan]="columns.length">
+          {{ market.loading() ? 'Chargement des cours…' : 'Aucun actif ne correspond.' }}
+        </td>
+      </tr>
+    </table>
+  </div>
+</section>

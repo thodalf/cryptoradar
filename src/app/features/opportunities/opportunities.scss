@@ -1,0 +1,93 @@
+.count {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-family: var(--cr-mono);
+}
+
+.settings { display: block; margin-bottom: 20px; }
+.sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px 32px;
+
+  label { display: flex; flex-direction: column; font: var(--mat-sys-body-medium); }
+  mat-slider { width: 100%; }
+}
+.spacer { flex: 1; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.card {
+  background: var(--mat-sys-surface-container);
+  border-radius: var(--cr-radius);
+  padding: 18px;
+  border-top: 3px solid var(--side);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ticker { font: var(--mat-sys-title-medium); }
+.name { font: var(--mat-sys-body-small); margin-left: 4px; }
+.price { font: var(--mat-sys-title-large); font-family: var(--cr-mono); margin-top: 2px; }
+.small { font-size: 16px; }
+
+.spark { width: 100%; opacity: 0.9; }
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0;
+
+  dt { font: var(--mat-sys-label-small); color: var(--mat-sys-on-surface-variant); }
+  dd { margin: 2px 0 0; font: var(--mat-sys-body-medium); font-family: var(--cr-mono); }
+}
+
+.signals {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li { display: flex; gap: 10px; align-items: center; }
+}
+.bar {
+  flex: 0 0 4px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--mat-sys-surface-container-highest);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+
+  span { display: block; width: 100%; background: var(--side); }
+}
+.sig-label { font: var(--mat-sys-label-large); color: var(--side); }
+.sig-detail { font: var(--mat-sys-body-small); }
+.quiet { margin: 0; font: var(--mat-sys-body-small); }
+
+.empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  mat-icon { color: var(--cr-up); }
+  p { margin: 0; }
+}
+
+.footnote { margin-top: 24px; font: var(--mat-sys-body-small); max-width: 760px; }
+
+@media (max-width: 700px) {
+  .hide-sm { display: none; }
+}

@@ -1,0 +1,126 @@
+<header class="page-header">
+  <div>
+    <h1>Détecteur d'opportunités</h1>
+    <p>RSI, pics de volume et mouvements atypiques sur bougies 1h — recalculés à chaque tick</p>
+  </div>
+  <mat-button-toggle-group [value]="filter()" (change)="filter.set($event.value)" hideSingleSelectionIndicator
+                           aria-label="Filtrer par sens">
+    <mat-button-toggle value="all">Tous</mat-button-toggle>
+    <mat-button-toggle value="buy">Achat <span class="count">{{ store.counts().buy }}</span></mat-button-toggle>
+    <mat-button-toggle value="sell">Vente <span class="count">{{ store.counts().sell }}</span></mat-button-toggle>
+    <mat-button-toggle value="watch">Surveiller <span class="count">{{ store.counts().watch }}</span></mat-button-toggle>
+  </mat-button-toggle-group>
+</header>
+
+<mat-accordion class="settings">
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title><mat-icon>tune</mat-icon>&nbsp;Seuils de détection</mat-panel-title>
+      <mat-panel-description class="hide-sm">
+        RSI {{ store.thresholds().rsiLow }}/{{ store.thresholds().rsiHigh }} ·
+        volume ×{{ store.thresholds().volumeRatio }} · z {{ store.thresholds().zScore }} ·
+        24h ±{{ store.thresholds().move24h }} %
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="sliders">
+      <label>
+        <span>Survente RSI ≤ <b>{{ store.thresholds().rsiLow }}</b></span>
+        <mat-slider min="10" max="45" step="1" discrete>
+          <input matSliderThumb [value]="store.thresholds().rsiLow" (valueChange)="setThreshold('rsiLow', $event)" />
+        </mat-slider>
+      </label>
+      <label>
+        <span>Surachat RSI ≥ <b>{{ store.thresholds().rsiHigh }}</b></span>
+        <mat-slider min="55" max="90" step="1" discrete>
+          <input matSliderThumb [value]="store.thresholds().rsiHigh" (valueChange)="setThreshold('rsiHigh', $event)" />
+        </mat-slider>
+      </label>
+      <label>
+        <span>Pic de volume ≥ <b>×{{ store.thresholds().volumeRatio }}</b> la moyenne 24h</span>
+        <mat-slider min="1.5" max="6" step="0.5" discrete>
+          <input matSliderThumb [value]="store.thresholds().volumeRatio" (valueChange)="setThreshold('volumeRatio', $event)" />
+        </mat-slider>
+      </label>
+      <label>
+        <span>Mouvement atypique ≥ <b>{{ store.thresholds().zScore }}</b> écarts-types</span>
+        <mat-slider min="1.5" max="5" step="0.5" discrete>
+          <input matSliderThumb [value]="store.thresholds().zScore" (valueChange)="setThreshold('zScore', $event)" />
+        </mat-slider>
+      </label>
+      <label>
+        <span>Forte variation 24h ≥ <b>{{ store.thresholds().move24h }} %</b></span>
+        <mat-slider min="3" max="30" step="1" discrete>
+          <input matSliderThumb [value]="store.thresholds().move24h" (valueChange)="setThreshold('move24h', $event)" />
+        </mat-slider>
+      </label>
+    </div>
+
+    <mat-action-row>
+      <mat-slide-toggle [checked]="showQuiet()" (change)="showQuiet.set($event.checked)">
+        Afficher aussi les actifs sans signal
+      </mat-slide-toggle>
+      <span class="spacer"></span>
+      <button mat-button (click)="store.reset()">Réinitialiser</button>
+    </mat-action-row>
+  </mat-expansion-panel>
+</mat-accordion>
+
+@if (market.loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<section class="grid">
+  @for (o of list(); track o.asset) {
+    <article class="card" [class]="'side-' + o.side">
+      <header class="card-head">
+        <div>
+          <div class="ticker">{{ o.asset }} <span class="muted name">{{ names[o.asset] ?? '' }}</span></div>
+          <div class="num price">{{ o.price | eur }}</div>
+        </div>
+        <span class="side-pill">
+          <span class="material-symbols-outlined small">{{ sideIcon[o.side] }}</span>{{ sideLabel[o.side] }}
+        </span>
+      </header>
+
+      <app-sparkline [values]="sparks()(o.asset)" [width]="280" [height]="44" class="spark" />
+
+      <dl class="metrics">
+        <div><dt>1h</dt><dd class="num" [class.up]="o.change1h > 0" [class.down]="o.change1h < 0">{{ o.change1h | pct }}</dd></div>
+        <div><dt>24h</dt><dd class="num" [class.up]="o.change24h > 0" [class.down]="o.change24h < 0">{{ o.change24h | pct }}</dd></div>
+        <div><dt>RSI</dt><dd class="num">{{ o.rsi === null ? '—' : o.rsi.toFixed(0) }}</dd></div>
+        <div><dt matTooltip="Volume de l'heure en cours (extrapolé) / moyenne horaire des 24h">Vol.</dt>
+          <dd class="num">{{ o.volumeRatio === null ? '—' : '×' + o.volumeRatio.toFixed(1) }}</dd></div>
+      </dl>
+
+      @if (o.signals.length) {
+        <ul class="signals">
+          @for (s of o.signals; track s.kind) {
+            <li [class]="'side-' + s.side">
+              <span class="bar"><span [style.height.%]="s.strength * 100"></span></span>
+              <div>
+                <div class="sig-label">{{ s.label }}</div>
+                <div class="muted sig-detail">{{ s.detail }}</div>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted quiet">Aucun signal avec les seuils actuels.</p>
+      }
+    </article>
+  } @empty {
+    @if (!market.loading()) {
+      <div class="panel empty">
+        <mat-icon>check_circle</mat-icon>
+        <p>Rien d'anormal pour l'instant avec ces seuils.<br />
+          <span class="muted">Assouplis-les ou affiche tous les actifs pour voir les indicateurs.</span></p>
+      </div>
+    }
+  }
+</section>
+
+<p class="muted footnote">
+  Ces signaux sont des indicateurs statistiques, pas des recommandations. Un RSI en survente peut le rester
+  longtemps en tendance baissière ; croise toujours plusieurs signaux avant d'agir.
+</p>

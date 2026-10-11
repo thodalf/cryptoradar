@@ -1,0 +1,231 @@
+<header class="page-header">
+  <div>
+    <h1>Portefeuille Wigl</h1>
+    <p>Positions reconstituées depuis ton historique, valorisées au prix du marché en direct</p>
+  </div>
+  <div class="actions">
+    <input #file type="file" accept=".csv,text/csv" hidden (change)="onFile(file)" />
+    <button mat-flat-button (click)="file.click()"><mat-icon>upload_file</mat-icon> Importer un CSV</button>
+    <button mat-icon-button [matMenuTriggerFor]="more" aria-label="Plus d'actions"><mat-icon>more_vert</mat-icon></button>
+    <mat-menu #more="matMenu">
+      <button mat-menu-item (click)="replaceOnImport.set(!replaceOnImport())">
+        <mat-icon>{{ replaceOnImport() ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+        L'import remplace l'historique
+      </button>
+      <button mat-menu-item (click)="downloadTemplate()">
+        <mat-icon>description</mat-icon> Télécharger le modèle CSV
+      </button>
+      <button mat-menu-item (click)="exportCsv()" [disabled]="store.isEmpty()">
+        <mat-icon>download</mat-icon> Exporter l'historique
+      </button>
+      <button mat-menu-item (click)="clearAll()" [disabled]="store.isEmpty()">
+        <mat-icon>delete_sweep</mat-icon> Vider l'historique
+      </button>
+    </mat-menu>
+  </div>
+</header>
+
+@if (store.isEmpty()) {
+  <section class="panel onboarding">
+    <mat-icon class="big">account_balance_wallet</mat-icon>
+    <div>
+      <h2>Aucune transaction pour l'instant</h2>
+      <p class="muted">
+        Wigl ne propose pas d'API : exporte ou recopie ton historique dans un CSV
+        (colonnes <code>date ; type ; actif ; quantite ; prix_eur ; frais_eur</code>), puis importe-le.
+        Les types reconnus : achat, vente, dépôt, retrait, récompense/cashback.
+        Tu peux aussi saisir les opérations une par une ci-dessous.
+      </p>
+      <div class="onb-actions">
+        <button mat-flat-button (click)="loadSample()"><mat-icon>science</mat-icon> Charger un exemple</button>
+        <button mat-stroked-button (click)="downloadTemplate()"><mat-icon>description</mat-icon> Modèle CSV</button>
+      </div>
+    </div>
+  </section>
+} @else {
+  @let s = summary();
+  <section class="kpis">
+    <div class="kpi">
+      <div class="label">Valeur actuelle</div>
+      <div class="value num">{{ s.totalValue | eur: 'amount' }}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Montant investi</div>
+      <div class="value num">{{ s.totalInvested | eur: 'amount' }}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Plus-value latente</div>
+      <div class="value num" [class.up]="s.unrealizedPnl > 0" [class.down]="s.unrealizedPnl < 0">
+        {{ s.unrealizedPnl | eur: 'amount' }} <small>{{ pnlPct() | pct }}</small>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="label">Plus-value réalisée</div>
+      <div class="value num" [class.up]="s.realizedPnl > 0" [class.down]="s.realizedPnl < 0">
+        {{ s.realizedPnl | eur: 'amount' }}
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="label">Frais payés</div>
+      <div class="value num">{{ s.totalFees | eur: 'amount' }}</div>
+    </div>
+  </section>
+
+  @if (s.unpriced.length) {
+    <p class="warn"><mat-icon>info</mat-icon>
+      Pas de cotation pour {{ s.unpriced.join(', ') }} — ajoute ces actifs à <code>WIGL_ASSETS</code> s'ils sont listés sur Binance.
+    </p>
+  }
+
+  <section class="split">
+    <div class="panel pad">
+      <h2>Répartition</h2>
+      <app-allocation-donut [holdings]="s.holdings" [total]="s.totalValue" />
+    </div>
+
+    <div class="panel">
+      <h2 class="pad-h">Positions</h2>
+      <div class="table-scroll">
+        <table mat-table [dataSource]="s.holdings">
+          <ng-container matColumnDef="asset">
+            <th mat-header-cell *matHeaderCellDef>Actif</th>
+            <td mat-cell *matCellDef="let h; let i = index">
+              <span class="sw" [style.background]="i < 7 ? palette[i] : palette[7]"></span>
+              <b>{{ h.asset }}</b><span class="muted asset-name">{{ names[h.asset] ?? '' }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="quantity">
+            <th mat-header-cell *matHeaderCellDef class="right">Quantité</th>
+            <td mat-cell *matCellDef="let h" class="right num">{{ h.quantity | qty }}</td>
+          </ng-container>
+          <ng-container matColumnDef="avgCost">
+            <th mat-header-cell *matHeaderCellDef class="right" matTooltip="Prix de revient moyen pondéré, frais inclus">PRU</th>
+            <td mat-cell *matCellDef="let h" class="right num">{{ h.avgCost | eur }}</td>
+          </ng-container>
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef class="right">Cours</th>
+            <td mat-cell *matCellDef="let h" class="right num">{{ h.price | eur }}</td>
+          </ng-container>
+          <ng-container matColumnDef="value">
+            <th mat-header-cell *matHeaderCellDef class="right">Valeur</th>
+            <td mat-cell *matCellDef="let h" class="right num">{{ h.value | eur: 'amount' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="pnl">
+            <th mat-header-cell *matHeaderCellDef class="right">+/- value</th>
+            <td mat-cell *matCellDef="let h" class="right num" [class.up]="(h.pnl ?? 0) > 0" [class.down]="(h.pnl ?? 0) < 0">
+              {{ h.pnl | eur: 'amount' }}<br /><small>{{ h.pnlPct | pct }}</small>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="weight">
+            <th mat-header-cell *matHeaderCellDef class="right">Poids</th>
+            <td mat-cell *matCellDef="let h" class="right num">{{ (h.weight * 100).toFixed(1) }} %</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="holdingColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: holdingColumns"></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+}
+
+<mat-accordion class="add">
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title><mat-icon>add_circle</mat-icon>&nbsp;Ajouter une transaction</mat-panel-title>
+    </mat-expansion-panel-header>
+    <form [formGroup]="form" (ngSubmit)="addTransaction()" class="tx-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Date</mat-label>
+        <input matInput type="datetime-local" formControlName="date" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select formControlName="type">
+          @for (t of txTypes; track t) {
+            <mat-option [value]="t">{{ typeLabel[t] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Actif</mat-label>
+        <mat-select formControlName="asset">
+          @for (a of assets; track a) { <mat-option [value]="a">{{ a }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Quantité</mat-label>
+        <input matInput type="number" step="any" formControlName="quantity" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Prix unitaire (€)</mat-label>
+        <input matInput type="number" step="any" formControlName="priceEur" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Frais (€)</mat-label>
+        <input matInput type="number" step="any" formControlName="feeEur" />
+      </mat-form-field>
+      <button mat-flat-button type="submit" [disabled]="form.invalid">Ajouter</button>
+    </form>
+  </mat-expansion-panel>
+</mat-accordion>
+
+@if (!store.isEmpty()) {
+  <section class="panel history">
+    <div class="history-head pad-h">
+      <h2>Historique</h2>
+      <mat-button-toggle-group [value]="typeFilter()" (change)="typeFilter.set($event.value)" hideSingleSelectionIndicator>
+        <mat-button-toggle value="all">Tout</mat-button-toggle>
+        <mat-button-toggle value="buy">Achats</mat-button-toggle>
+        <mat-button-toggle value="sell">Ventes</mat-button-toggle>
+        <mat-button-toggle value="reward">Récompenses</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    <div class="table-scroll">
+      <table mat-table [dataSource]="txSource" matSort matSortActive="date" matSortDirection="desc">
+        <ng-container matColumnDef="date">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+          <td mat-cell *matCellDef="let t" class="num">{{ t.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+          <td mat-cell *matCellDef="let t">
+            <span class="side-pill" [class]="t.type === 'sell' || t.type === 'withdraw' ? 'side-sell' : t.type === 'buy' ? 'side-buy' : 'side-watch'">
+              {{ typeLabel[t.type] }}
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="asset">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Actif</th>
+          <td mat-cell *matCellDef="let t"><b>{{ t.asset }}</b></td>
+        </ng-container>
+        <ng-container matColumnDef="quantity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">Quantité</th>
+          <td mat-cell *matCellDef="let t" class="right num">{{ t.quantity | qty }}</td>
+        </ng-container>
+        <ng-container matColumnDef="priceEur">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">Prix</th>
+          <td mat-cell *matCellDef="let t" class="right num">{{ t.priceEur | eur }}</td>
+        </ng-container>
+        <ng-container matColumnDef="total">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">Montant</th>
+          <td mat-cell *matCellDef="let t" class="right num">{{ t.priceEur === null ? null : t.quantity * t.priceEur | eur: 'amount' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="feeEur">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="right">Frais</th>
+          <td mat-cell *matCellDef="let t" class="right num">{{ t.feeEur | eur: 'amount' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let t" class="right">
+            <button mat-icon-button (click)="remove(t)" aria-label="Supprimer" matTooltip="Supprimer">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="txColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: txColumns"></tr>
+      </table>
+    </div>
+    <mat-paginator [pageSize]="15" [pageSizeOptions]="[15, 50, 100]" showFirstLastButtons />
+  </section>
+}

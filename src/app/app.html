@@ -1,0 +1,53 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav #drawer
+               [mode]="isHandset() ? 'over' : 'side'"
+               [opened]="!isHandset()"
+               class="sidenav">
+    <div class="brand">
+      <mat-icon class="brand-icon">radar</mat-icon>
+      <span>Crypto Radar</span>
+    </div>
+
+    <mat-nav-list>
+      @for (item of nav; track item.path) {
+        <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive"
+           [activated]="rla.isActive" (click)="isHandset() && drawer.close()">
+          <mat-icon matListItemIcon
+                    [matBadge]="item.path === '/opportunites' && signalCount() ? signalCount() : null"
+                    matBadgeSize="small" matBadgeColor="accent">{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <p class="disclaimer">
+      Outil d'aide à l'analyse, pas un conseil en investissement.
+      @if (demo) { Version démo : cours fictifs générés dans le navigateur. }
+      @else { Données de marché : Binance (USDT converti en EUR). }
+    </p>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="topbar">
+      @if (isHandset()) {
+        <button mat-icon-button (click)="drawer.toggle()" aria-label="Menu">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      @if (demo) {
+        <span class="demo-pill" matTooltip="Version de démonstration : les cours sont simulés, pas réels. Le portefeuille fonctionne avec tes propres données.">
+          <mat-icon>science</mat-icon> Données de marché simulées
+        </span>
+      }
+      <span class="spacer"></span>
+      <span class="conn" [class]="'conn conn--' + market.connection()"
+            [matTooltip]="'Dernière mise à jour : ' + (market.lastUpdate() ? (market.lastUpdate() | date: 'HH:mm:ss') : '—')">
+        <span class="dot"></span>{{ connectionLabel() }}
+      </span>
+    </mat-toolbar>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

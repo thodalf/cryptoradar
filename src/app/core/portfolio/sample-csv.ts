@@ -1,0 +1,8 @@
+/** Historique d'exemple (fictif) — identique à public/modele-transactions.csv. */
+export const SAMPLE_CSV = `date;type;actif;quantite;prix_eur;frais_eur;note
+15/01/2026 10:12;achat;BTC;0,0025;38500;1,50;Premier achat
+02/02/2026 18:40;achat;ETH;0,15;2450;0,90;
+10/03/2026 09:00;achat;SOL;3;135,20;0,80;Coffre Solana
+01/04/2026 00:00;récompense;USDC;4,20;0,92;0;Cashback carte
+20/05/2026 14:30;vente;ETH;0,05;2900;0,50;
+`;
